@@ -1,5 +1,5 @@
-#include <stdlib.h>
-#include <time.h>
+#include <cstdlib>
+#include <ctime>
 
 // Including the Blackjack class, which includes the Hand class, which included the Card class
 #include "Blackjack.h"
