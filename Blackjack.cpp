@@ -19,12 +19,10 @@
 #include <thread>
 
 // Including used elements from the std namespace to avoid having to write std:: a lot throughout the code
-using std::cout, std::endl, std::cerr, std::cin;
+using std::cout, std::endl, std::cerr, std::cin, std::isdigit;
 
 #include "Blackjack.h"
 
-
-const int SECONDS_BETWEEN_DRAWS = 2;
 
 /**
  * This function manages a full round of Blackjack. To start the game, it draws the dealer a card and the player two
@@ -37,6 +35,9 @@ const int SECONDS_BETWEEN_DRAWS = 2;
 void Blackjack::playRound() {
     playerHand.emptyHand();
     dealerHand.emptyHand();
+
+    thisRoundBet = requestBetAmount();
+    playerMoney = playerMoney - thisRoundBet;
 
     // To start the game, the dealer gets one open card
     dealerHand.addRandomCards(1);
@@ -143,15 +144,28 @@ void Blackjack::concludeRound() {
 
 
     // Printing who won the round
-    if (wonWithBlackjack == true) {
+    if (wonWithBlackjack) {
         cout << "BLACKJACK!" << endl;
-    }
-    if (playerWon == true) {
         printYouWon();
-    } else if (dealerWon == true) {
+        payout(thisRoundBet, 1.5);
+        cout << "Your payout is one and a half times your bet, plus your initial bet! Your balance is now: "
+             << playerMoney << endl << endl;
+    } else if (playerWon && !wonWithBlackjack) {
+        printYouWon();
+        payout(thisRoundBet, 1);
+        cout << "Your bet has been doubled! " << "Your balance is now: " << playerMoney << endl << endl;
+    } else if (dealerWon) {
         printYouLost();
+        cout << "You lost your bet. " << "Your balance is now: " << playerMoney << endl << endl;
     } else {
-        cout << "It's a tie. No one won." << endl << endl;
+        cout << "It's a tie. No one won. Your bet has been returned. " << "Your balance is now: " << playerMoney << endl
+             << endl;
+    }
+
+    // If the player does not have enough money to place a bet of at least 1, the game is over...
+    if (playerMoney < 1) {
+        cout << "Oops! It looks like you don't have enough balance to place a bet. The game is over." << endl << endl;
+        quitGame();
     }
 
     // Asking whether the user wants to play a new round
@@ -247,6 +261,9 @@ string Blackjack::requestHitOrStand() {
 void Blackjack::printDealerAndPlayerHands() {
     printConsoleSeparationLine(); // ===========
 
+    printBalanceAndBet();
+    cout << endl;
+
     cout << "Dealer " << "(" << sumOptimal(dealerHand) << "):" << endl;
     dealerHand.printHorizontal();
 
@@ -262,7 +279,7 @@ void Blackjack::printDealerAndPlayerHands() {
  * of the number of Aces in the hand as they can have a flexible value of 1 or 11. In case the sum exceeds 21 (busting),
  * the function adjusts the value of Aces from 11 to 1 to minimize the total sum and avoid busting.
  */
-int Blackjack::sumOptimal(Hand &handToSum) {
+unsigned int Blackjack::sumOptimal(Hand &handToSum) {
     int sum = 0;
     int numberOfAcesInHand = 0;
 
@@ -286,6 +303,64 @@ int Blackjack::sumOptimal(Hand &handToSum) {
     }
 
     return sum;
+}
+
+/**
+ * This function request the player to place a bet for the coming round. It shows the balance, so the player knows how
+ * much they can spend. Then the player is asked to input an integer for how much they want to bet. The input is first
+ * checked for being numerical (not a string with letters or symbols), whether it is at least 1, and whether the player
+ * has enough money to place the bet. When all checks are passed, the bet is returned as an integer.
+ */
+unsigned int Blackjack::requestBetAmount() {
+    cout << endl << "YOUR BALANCE: " << playerMoney << endl;
+
+    unsigned int bet;
+
+    while (true) {
+        string betStr;
+        cout << "Please place your bet (an integer of at least 1):" << endl;
+        cin >> betStr;
+
+        // Checking if the string is a number. Principle adapted from:
+        // https://www.tutorialspoint.com/cplusplus-program-to-check-if-input-is-an-integer-or-a-string
+        bool inputIsNumerical = true;
+        for (char i : betStr) { // Checking one by one all the characters that the user entered
+            if (!isdigit(i)) {
+                inputIsNumerical = false;
+                cout << "Your input is not a whole number, or contains letters. Please try again." << endl;
+                break;
+            }
+        }
+        if (inputIsNumerical) {
+            bet = stoi(betStr); // Converting the bet string to an integer
+
+            if (bet < 1) {
+                cout << "Sorry, this bet is below the minimum bet of 1. Please try again." << endl;
+            } else if (bet > playerMoney) {
+                cout << "Sorry, you do not have enough money to place this bet. Please try again." << endl;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return bet;
+}
+
+/**
+ * This function handles paying the player the right amount of money based on the conclusion of the round (see
+ * concludeRound()). For a normal win, the factor is 1, so the player gets back twice their bet. In case of
+ * winning with a Blackjack, the payout rate is 2:3, so the player gets back their bet times factor 1.5 + their bet.
+ */
+void Blackjack::payout(double bet, double factor) {
+    playerMoney = playerMoney + thisRoundBet * factor + thisRoundBet;
+}
+
+/**
+ * This function prints an overview of the player's remaining balance and the bet they placed.
+ */
+void Blackjack::printBalanceAndBet() {
+    cout << "YOUR BALANCE: " << playerMoney << " | YOUR BET: " << thisRoundBet << endl;
 }
 
 /**

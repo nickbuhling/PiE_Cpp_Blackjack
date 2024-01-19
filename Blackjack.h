@@ -16,24 +16,12 @@
 #include "Hand.h"
 
 class Blackjack {
-public:
-    Hand playerHand;
-    Hand dealerHand;
-
-    /**
-     * This function launches the game and takes the to sort of a 'main menu'. It welcomes the user and asks them
-     * whether they want to start playing a round of Blackjack or want to quit the program. Based on the user's entered
-     * response in the form of a letter, this function calls the playRound() or quitGame() functions.
-     */
-    void launchGame();
-
-    /**
-     * This function exits the program with code 0 (successful exit)
-     */
-    void quitGame();
-
 private:
     const int SECONDS_BETWEEN_DRAWS = 2;
+    const double MONEY_AT_START = 10;
+
+    double playerMoney = MONEY_AT_START;
+    double thisRoundBet = 0;
 
     /**
      * This function manages a full round of Blackjack. To start the game, it draws the dealer a card and the player two
@@ -96,7 +84,27 @@ private:
      * of the number of Aces in the hand as they can have a flexible value of 1 or 11. In case the sum exceeds 21 (busting),
      * the function adjusts the value of Aces from 11 to 1 to minimize the total sum and avoid busting.
      */
-    int sumOptimal(Hand &handToSum);
+    unsigned int sumOptimal(Hand &handToSum);
+
+    /**
+     * This function request the player to place a bet for the coming round. It shows the balance, so the player knows how
+     * much they can spend. Then the player is asked to input an integer for how much they want to bet. The input is first
+     * checked for being numerical (not a string with letters or symbols), whether it is at least 1, and whether the player
+     * has enough money to place the bet. When all checks are passed, the bet is returned as an integer.
+     */
+    unsigned int requestBetAmount();
+
+    /**
+     * This function handles paying the player the right amount of money based on the conclusion of the round (see
+     * concludeRound()). For a normal win, the factor is 1, so the player gets back twice their bet. In case of
+     * winning with a Blackjack, the payout rate is 2:3, so the player gets back their bet times factor 1.5 + their bet.
+     */
+    void payout(double bet, double factor);
+
+    /**
+     * This function prints an overview of the player's remaining balance and the bet they placed.
+     */
+    void printBalanceAndBet();
 
     /**
      * This function uses thread and chrono to sleep the program for as many seconds as specified by the parameter
@@ -104,6 +112,22 @@ private:
      * of pausing a program was learned from https://cplusplus.com/reference/thread/this_thread/sleep_for/.
      */
     void waitSeconds(int secondsToWait);
+
+public:
+    Hand playerHand;
+    Hand dealerHand;
+
+    /**
+     * This function launches the game and takes the to sort of a 'main menu'. It welcomes the user and asks them
+     * whether they want to start playing a round of Blackjack or want to quit the program. Based on the user's entered
+     * response in the form of a letter, this function calls the playRound() or quitGame() functions.
+     */
+    void launchGame();
+
+    /**
+     * This function exits the program with code 0 (successful exit)
+     */
+    void quitGame();
 };
 
 
